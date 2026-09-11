@@ -8,3 +8,7 @@ out/
 next-env.d.ts
 .DS_Store
 .vercel
+
+
+# .env.example is documentation and must stay tracked.
+!.env.example
