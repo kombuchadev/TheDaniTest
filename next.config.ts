@@ -7,9 +7,14 @@ import type { NextConfig } from "next";
  * brackets and rendered as text, never as HTML. Tighten with a nonce if this
  * ever grows a real attack surface.
  */
+// Next's dev server compiles with eval() for HMR, so without this the client
+// bundle never evaluates, the page never hydrates, and the form is dead. Dev
+// only: production builds do not need it.
+const isDev = process.env.NODE_ENV === "development";
+
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
