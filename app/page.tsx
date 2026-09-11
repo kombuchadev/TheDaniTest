@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Dani } from "@/components/Dani";
+import { Arrow } from "@/components/icons";
 import { GOOD_FROM, Verdict } from "@/components/Verdict";
 import { MAX_IDEA_CHARS } from "@/lib/guards/input";
 import type { JudgedVerdict } from "@/lib/schema";
@@ -91,11 +92,23 @@ export default function HomePage() {
         </div>
 
         <div className="controls">
-          <span className="count" data-over={over}>
-            {idea.length}/{MAX_IDEA_CHARS}
+          {/* The waiting line takes the counter's place rather than sitting
+              inside the button, which stretched it to the width of a sentence. */}
+          <span className="count" data-over={over} aria-live="polite">
+            {pending ? WAITING[waitLine] : `${idea.length}/${MAX_IDEA_CHARS}`}
           </span>
           <button type="submit" className="go" disabled={pending || over || empty}>
-            {pending ? WAITING[waitLine] : "Judge it"}
+            {pending ? (
+              <>
+                <span className="spinner" aria-hidden />
+                Judging
+              </>
+            ) : (
+              <>
+                Judge it
+                <Arrow />
+              </>
+            )}
           </button>
         </div>
       </form>

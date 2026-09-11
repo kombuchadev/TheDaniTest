@@ -55,6 +55,43 @@ export function HelmetFallback() {
   );
 }
 
+/**
+ * Orbits Dani's portrait. Renders at roughly 23px, so it is drawn as solid
+ * shapes with no strokes: hairlines disappear at that size.
+ */
+export function MiniAstronaut() {
+  return (
+    <svg className="mini" viewBox="0 0 32 32" aria-hidden>
+      {/* Outlined, not just filled: a white figure on pale paper reads as a
+          smudge without them. */}
+      <g stroke="#2c3e8f" strokeWidth="1.5" strokeLinejoin="round">
+        <rect x="5" y="16.5" width="6" height="9" rx="3" fill="#fff" />
+        <rect x="21" y="16.5" width="6" height="9" rx="3" fill="#fff" />
+        <rect x="9" y="14.5" width="14" height="13" rx="5" fill="#fff" />
+        <circle cx="16" cy="9.5" r="8.2" fill="#fff" />
+        <path d="M10.6 8.8a5.4 5.4 0 0 1 10.8 0v1.4a5.4 5.4 0 0 1-10.8 0z" fill="#2c3e8f" />
+      </g>
+      <rect x="12.5" y="18.5" width="7" height="5" rx="2" fill="#c9cfe6" />
+      <path
+        d="M13 8.2a4 4 0 0 1 2.6-1.9"
+        stroke="#fff"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.8"
+      />
+    </svg>
+  );
+}
+
+export function Arrow() {
+  return (
+    <svg className="go-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M5 12h13M13 6.5 18.5 12 13 17.5" />
+    </svg>
+  );
+}
+
 /** Decorative drifter. */
 export function Astronaut() {
   return (

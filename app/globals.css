@@ -113,7 +113,9 @@ body {
 .dani {
   display: flex;
   align-items: center;
-  gap: clamp(0.875rem, 4vw, 1.25rem);
+  /* The astronaut swings through 3 o'clock, so the gap has to clear the orbit
+     track plus half the figure, or it lands on the headline. */
+  gap: clamp(2.35rem, 8vw, 2.7rem);
 }
 
 .dani-port {
@@ -189,9 +191,42 @@ body {
   color: var(--ink-soft);
 }
 
+/* A tiny astronaut in orbit around his head. The track rotates; the figure
+   counter-rotates at the same speed so it never goes upside down. */
+.orbit {
+  --mini: clamp(1.55rem, 6.5vw, 1.9rem);
+  --track: 1.15rem;
+
+  position: absolute;
+  inset: calc(var(--track) * -1);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+  border: 1px dashed rgba(44, 62, 143, 0.22);
+  animation: orbit-spin 18s linear infinite;
+}
+
+.orbit .mini {
+  position: absolute;
+  top: calc(var(--mini) / -2);
+  left: 50%;
+  width: var(--mini);
+  height: var(--mini);
+  margin-left: calc(var(--mini) / -2);
+  animation: orbit-spin 18s linear infinite reverse;
+  filter: drop-shadow(0 1px 3px rgba(21, 21, 26, 0.22));
+}
+
+@keyframes orbit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Reaction: pops from behind the portrait and bounces. */
 .reaction {
   position: absolute;
+  z-index: 2;
   right: -0.5rem;
   bottom: -0.5rem;
   width: clamp(2.25rem, 10vw, 2.75rem);
@@ -361,33 +396,99 @@ body {
 .go {
   appearance: none;
   border: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
   background: var(--ink);
-  color: var(--paper);
+  color: #fff;
   border-radius: 999px;
-  padding: 0.7rem 1.4rem;
+  padding: 0.72rem 1.3rem 0.72rem 1.5rem;
   min-height: 2.75rem;
   font: inherit;
   font-size: 0.92rem;
   font-weight: 500;
+  letter-spacing: -0.005em;
   cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 1px 2px rgba(21, 21, 26, 0.2),
+    0 10px 22px -12px rgba(44, 62, 143, 0.7);
   transition:
     transform 0.3s var(--ease),
-    opacity 0.3s var(--ease),
-    background 0.3s var(--ease);
+    background 0.3s var(--ease),
+    box-shadow 0.3s var(--ease),
+    color 0.3s var(--ease);
+}
+
+/* A light sweeps across on hover, like a visor catching the sun. */
+.go::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -60%;
+  width: 45%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  transform: skewX(-18deg);
+  transition: left 0.65s var(--ease);
+}
+
+.go:hover:not(:disabled)::before {
+  left: 130%;
 }
 
 .go:hover:not(:disabled) {
-  transform: translateY(-2px);
   background: var(--deep);
+  transform: translateY(-2px);
+  box-shadow:
+    0 2px 4px rgba(21, 21, 26, 0.16),
+    0 18px 30px -14px rgba(44, 62, 143, 0.85);
 }
 
 .go:active:not(:disabled) {
   transform: translateY(0) scale(0.98);
+  box-shadow: 0 1px 2px rgba(21, 21, 26, 0.2);
 }
 
+.go:focus-visible {
+  outline: 2px solid var(--deep);
+  outline-offset: 3px;
+}
+
+/* Reads as deliberately inactive rather than as a broken dark button. */
 .go:disabled {
-  opacity: 0.32;
+  background: #eceae4;
+  color: var(--ink-faint);
+  box-shadow: none;
   cursor: not-allowed;
+}
+
+.go-arrow {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: none;
+  transition: transform 0.35s var(--ease);
+}
+
+.go:hover:not(:disabled) .go-arrow {
+  transform: translateX(3px);
+}
+
+.spinner {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: none;
+  border-radius: 50%;
+  border: 1.6px solid rgba(255, 255, 255, 0.32);
+  border-top-color: #fff;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ---------------------------------------------------------------

@@ -1,7 +1,14 @@
 "use client";
 
 import { useCallback, useId, useState } from "react";
-import { HelmetFallback, Instagram, ThumbDown, ThumbUp, YouTube } from "./icons";
+import {
+  HelmetFallback,
+  Instagram,
+  MiniAstronaut,
+  ThumbDown,
+  ThumbUp,
+  YouTube,
+} from "./icons";
 
 type Props = {
   /** null while idle. Changing `reactionKey` replays the bounce. */
@@ -45,6 +52,10 @@ export function Dani({ reaction, reactionKey }: Props) {
           ) : (
             <HelmetFallback />
           )}
+
+          <span className="orbit" aria-hidden>
+            <MiniAstronaut />
+          </span>
 
           {reaction && (
             <span key={reactionKey} className="reaction">
