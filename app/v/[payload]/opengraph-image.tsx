@@ -6,8 +6,8 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 /**
- * The distribution mechanic: a PNG rendered per share URL, so a LinkedIn feed
- * shows the score and the punchline without anyone clicking through.
+ * The distribution mechanic: a PNG rendered per share URL, so a feed shows the
+ * score and the punchline without anyone clicking through.
  */
 export default async function Image({ params }: { params: Promise<{ payload: string }> }) {
   const { payload } = await params;
@@ -16,7 +16,8 @@ export default async function Image({ params }: { params: Promise<{ payload: str
   const score = verdict?.score ?? 0;
   const line = verdict?.verdict ?? "Dani declined to comment.";
   const band = verdict?.band ?? "";
-  const tone = score < 25 ? "#f87171" : score < 60 ? "#fbbf24" : "#34d399";
+  const good = score >= 50;
+  const tone = good ? "#1f9254" : "#cf3a31";
 
   return new ImageResponse(
     (
@@ -27,26 +28,29 @@ export default async function Image({ params }: { params: Promise<{ payload: str
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          background: "#0b0b0d",
-          padding: "72px",
+          background: "#fbfaf6",
+          backgroundImage: "radial-gradient(circle at 82% 12%, #eef1fa, #fbfaf6 55%)",
+          padding: "76px",
           fontFamily: "sans-serif",
         }}
       >
-        <div style={{ display: "flex", color: "#737373", fontSize: 28, letterSpacing: 4 }}>
+        <div style={{ display: "flex", color: "#8b8b96", fontSize: 26, letterSpacing: 5 }}>
           THE DANI TEST
         </div>
 
         <div style={{ display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", alignItems: "baseline", color: tone }}>
-            <span style={{ fontSize: 180, fontWeight: 700, lineHeight: 1 }}>{score}</span>
-            <span style={{ fontSize: 56, color: "#525252" }}>/100</span>
+            <span style={{ fontSize: 190, fontWeight: 700, lineHeight: 1, letterSpacing: -8 }}>
+              {score}
+            </span>
+            <span style={{ fontSize: 54, color: "#a9a9b4", marginLeft: 6 }}>/100</span>
           </div>
-          <div style={{ display: "flex", color: "#a3a3a3", fontSize: 32, marginTop: 8 }}>
+          <div style={{ display: "flex", color: "#4a4a55", fontSize: 34, marginTop: 10 }}>
             {band}
           </div>
         </div>
 
-        <div style={{ display: "flex", color: "#e8e8ea", fontSize: 44, lineHeight: 1.25 }}>
+        <div style={{ display: "flex", color: "#15151a", fontSize: 46, lineHeight: 1.25 }}>
           {line.length > 110 ? `${line.slice(0, 107)}…` : line}
         </div>
       </div>

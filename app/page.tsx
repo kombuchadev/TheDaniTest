@@ -1,11 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import { VerdictCard } from "@/components/VerdictCard";
+import { useRef, useState } from "react";
+import { Dani } from "@/components/Dani";
+import { GOOD_FROM, Verdict } from "@/components/Verdict";
 import { MAX_IDEA_CHARS } from "@/lib/guards/input";
 import type { JudgedVerdict } from "@/lib/schema";
 
 type Result = { verdict: JudgedVerdict; share: string };
+
+/** Rotated while waiting, so the pause is part of the bit. */
+const WAITING = [
+  "Dani is reading it.",
+  "Dani has stopped reading it.",
+  "Dani is thinking about something else.",
+  "Dani will get to it.",
+];
 
 export default function HomePage() {
   const [idea, setIdea] = useState("");
@@ -13,17 +22,26 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [waitLine, setWaitLine] = useState(0);
+
+  // Bumped on every verdict so the thumb replays its bounce even when two
+  // verdicts in a row land on the same side.
+  const reactionKey = useRef(0);
 
   const over = idea.length > MAX_IDEA_CHARS;
+  const empty = idea.trim().length === 0;
+
+  const reaction = result ? (result.verdict.score >= GOOD_FROM ? "up" : "down") : null;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (pending || idea.trim().length === 0 || over) return;
+    if (pending || empty || over) return;
 
     setPending(true);
     setError(null);
     setResult(null);
     setCopied(false);
+    setWaitLine((n) => (n + 1) % WAITING.length);
 
     try {
       const res = await fetch("/api/judge", {
@@ -33,8 +51,9 @@ export default function HomePage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(typeof data?.error === "string" ? data.error : "Something broke.");
+        setError(typeof data?.error === "string" ? data.error : "That did not work.");
       } else {
+        reactionKey.current += 1;
         setResult(data as Result);
       }
     } catch {
@@ -46,60 +65,48 @@ export default function HomePage() {
 
   async function copyShare() {
     if (!result) return;
-    const url = `${window.location.origin}/v/${result.share}`;
-    await navigator.clipboard.writeText(url);
+    await navigator.clipboard.writeText(`${window.location.origin}/v/${result.share}`);
     setCopied(true);
   }
 
   return (
     <>
-      <header>
-        <h1 className="text-3xl font-bold tracking-tight">The Dani Test</h1>
-        <p className="mt-2 text-neutral-400">
-          Describe your project idea. Dani will judge it. Manage your expectations.
-        </p>
-      </header>
+      <Dani reaction={reaction} reactionKey={reactionKey.current} />
 
-      <form onSubmit={submit} className="flex flex-col gap-3">
-        <textarea
-          value={idea}
-          onChange={(e) => setIdea(e.target.value)}
-          rows={5}
-          placeholder="An app that reminds you to drink water, but with AI"
-          className="w-full resize-none rounded-lg border border-neutral-800 bg-neutral-900/60 p-4 text-neutral-100 outline-none placeholder:text-neutral-600 focus:border-neutral-600"
-        />
+      <p className="subtitle">
+        Describe a project idea. He decides whether you would still build it if
+        nobody was watching.
+      </p>
 
-        <div className="flex items-center justify-between gap-4">
-          <span
-            className={`text-xs tabular-nums ${over ? "text-red-400" : "text-neutral-600"}`}
-          >
+      <form onSubmit={submit}>
+        <div className="field">
+          <textarea
+            value={idea}
+            onChange={(e) => setIdea(e.target.value)}
+            rows={3}
+            placeholder="An app that reminds you to drink water, but with AI"
+            aria-label="Your project idea"
+          />
+          <div className="rule" />
+        </div>
+
+        <div className="controls">
+          <span className="count" data-over={over}>
             {idea.length}/{MAX_IDEA_CHARS}
           </span>
-
-          <button
-            type="submit"
-            disabled={pending || over || idea.trim().length === 0}
-            className="rounded-lg bg-neutral-100 px-5 py-2 text-sm font-semibold text-neutral-900 transition disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {pending ? "Dani is unimpressed…" : "Judge it"}
+          <button type="submit" className="go" disabled={pending || over || empty}>
+            {pending ? WAITING[waitLine] : "Judge it"}
           </button>
         </div>
       </form>
 
-      {error && (
-        <p className="rounded-lg border border-red-900/60 bg-red-950/30 p-4 text-sm text-red-300">
-          {error}
-        </p>
-      )}
+      {error && <p className="error">{error}</p>}
 
       {result && (
-        <div className="flex flex-col gap-3">
-          <VerdictCard verdict={result.verdict} />
-          <button
-            onClick={copyShare}
-            className="self-start text-sm text-neutral-400 underline underline-offset-4 hover:text-neutral-200"
-          >
-            {copied ? "Link copied" : "Copy share link"}
+        <div>
+          <Verdict verdict={result.verdict} />
+          <button type="button" className="share" onClick={copyShare}>
+            {copied ? "Copied" : "Copy share link"}
           </button>
         </div>
       )}
