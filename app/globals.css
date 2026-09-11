@@ -354,6 +354,9 @@ body {
   line-height: 1.5;
   padding: 0 0 0.75rem;
   outline: none;
+  /* Height is driven by content from the page, so never show a scrollbar. */
+  overflow: hidden;
+  display: block;
 }
 
 .field textarea::placeholder {
@@ -495,6 +498,78 @@ body {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* ---------------------------------------------------------------
+   Waiting: three weightless dots and a rotating excuse
+   --------------------------------------------------------------- */
+
+.waiting {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  animation: rise 0.45s var(--ease) both;
+}
+
+.floaters {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 0.3rem;
+  height: 1.4rem;
+  flex: none;
+}
+
+.floaters i {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: var(--deep);
+  opacity: 0.75;
+  animation: bob 1.5s var(--ease) infinite;
+}
+
+.floaters i:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.floaters i:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateY(-0.7rem);
+    opacity: 0.9;
+  }
+}
+
+.waiting p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.98rem;
+  animation: swap 0.45s var(--ease) both;
+}
+
+@keyframes swap {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* He starts pacing while he reads. */
+.dani-port[data-thinking="true"] .orbit,
+.dani-port[data-thinking="true"] .orbit .mini {
+  animation-duration: 2.6s;
 }
 
 /* ---------------------------------------------------------------

@@ -59,9 +59,16 @@ async function once(
     // A 400 on json_schema usually means "this model does not support it".
     // Downgrade once rather than burning the whole provider.
     if (res.status === 400 && mode === "json_schema") return { downgrade: true };
-    // NOTE: the upstream body is intentionally never read, logged, or
-    // propagated — error payloads can echo request contents and key fragments.
-    throw new ProviderError(cfg.name, "http", `status ${res.status}`);
+
+    // In production the upstream body is never read, logged, or propagated:
+    // error payloads can echo request contents and key fragments. In dev that
+    // silence makes a failing provider impossible to diagnose, so read a
+    // truncated copy there and there only.
+    let detail = "";
+    if (process.env.NODE_ENV === "development") {
+      detail = `: ${(await res.text().catch(() => "")).slice(0, 300)}`;
+    }
+    throw new ProviderError(cfg.name, "http", `status ${res.status}${detail}`);
   }
 
   let json: unknown;

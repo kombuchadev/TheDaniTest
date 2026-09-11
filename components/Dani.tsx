@@ -14,9 +14,11 @@ type Props = {
   /** null while idle. Changing `reactionKey` replays the bounce. */
   reaction: "up" | "down" | null;
   reactionKey: number;
+  /** Spins the orbit up while a verdict is in flight. */
+  thinking?: boolean;
 };
 
-export function Dani({ reaction, reactionKey }: Props) {
+export function Dani({ reaction, reactionKey, thinking = false }: Props) {
   const [open, setOpen] = useState(false);
   const [hasPhoto, setHasPhoto] = useState(true);
   const panelId = useId();
@@ -34,6 +36,7 @@ export function Dani({ reaction, reactionKey }: Props) {
         <button
           type="button"
           className="dani-port"
+          data-thinking={thinking}
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
           aria-controls={panelId}
