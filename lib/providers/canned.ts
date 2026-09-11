@@ -10,16 +10,16 @@ import type { Verdict } from "../schema";
  */
 const CANNED: Verdict[] = [
   {
-    score: 11,
-    verdict: "Dani has judged enough for one day.",
+    score: 14,
+    verdict: "Dani is away from his phone. That is the whole personality.",
     roast: [
-      "The queue is long and the ideas are short.",
-      "Try again in a bit. The verdict will not improve.",
+      "He will look at it eventually. Probably.",
+      "The idea will not have improved by then.",
     ],
-    redeemingQuality: "You showed up. That is something.",
+    redeemingQuality: "You built something while he was out. That counts.",
   },
   {
-    score: 17,
+    score: 21,
     verdict: "No comment. That is the comment.",
     roast: [
       "Some ideas answer themselves.",
@@ -28,20 +28,20 @@ const CANNED: Verdict[] = [
     redeemingQuality: "It is at least short.",
   },
   {
-    score: 23,
-    verdict: "Dani looked at this, sighed, and closed the laptop.",
+    score: 17,
+    verdict: "Dani has gone to play football. Try later.",
     roast: [
-      "The sigh was the detailed feedback.",
-      "Come back when it does something.",
+      "He did not ask what the idea was.",
+      "That is not rudeness, he genuinely just left.",
     ],
-    redeemingQuality: "There is a real idea in here, somewhere, unattended.",
+    redeemingQuality: "Nothing here needed his approval anyway.",
   },
   {
-    score: 8,
-    verdict: "Dani is currently unavailable, which is probably a mercy.",
+    score: 9,
+    verdict: "Dani is not looking at this right now, which tells you something.",
     roast: [
       "Consider this a stay of execution.",
-      "Use the time wisely.",
+      "Use it to go build the thing instead of describing it.",
     ],
     redeemingQuality: "Timing, at least, is on your side.",
   },
