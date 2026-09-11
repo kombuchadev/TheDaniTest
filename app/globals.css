@@ -20,6 +20,12 @@
   --bad: #cf3a31;
 
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Orbit geometry. Anything that has to stay out of the astronaut's way
+     measures itself from these two, so the clearances cannot drift. */
+  --orbit-track: 1.15rem;
+  --orbit-mini: clamp(1.55rem, 6.5vw, 1.9rem);
+  --orbit-reach: calc(var(--orbit-track) + var(--orbit-mini) / 2);
 }
 
 * {
@@ -113,9 +119,9 @@ body {
 .dani {
   display: flex;
   align-items: center;
-  /* The astronaut swings through 3 o'clock, so the gap has to clear the orbit
-     track plus half the figure, or it lands on the headline. */
-  gap: clamp(2.35rem, 8vw, 2.7rem);
+  /* The astronaut swings through 3 o'clock, so the gap has to clear its reach
+     or it lands on the headline. */
+  gap: calc(var(--orbit-reach) + 0.6rem);
 }
 
 .dani-port {
@@ -194,25 +200,22 @@ body {
 /* A tiny astronaut in orbit around his head. The track rotates; the figure
    counter-rotates at the same speed so it never goes upside down. */
 .orbit {
-  --mini: clamp(1.55rem, 6.5vw, 1.9rem);
-  --track: 1.15rem;
-
   position: absolute;
-  inset: calc(var(--track) * -1);
+  inset: calc(var(--orbit-track) * -1);
   border-radius: 50%;
   pointer-events: none;
   z-index: 1;
-  border: 1px dashed rgba(44, 62, 143, 0.22);
+  border: 1px dashed rgba(21, 21, 26, 0.16);
   animation: orbit-spin 18s linear infinite;
 }
 
 .orbit .mini {
   position: absolute;
-  top: calc(var(--mini) / -2);
+  top: calc(var(--orbit-mini) / -2);
   left: 50%;
-  width: var(--mini);
-  height: var(--mini);
-  margin-left: calc(var(--mini) / -2);
+  width: var(--orbit-mini);
+  height: var(--orbit-mini);
+  margin-left: calc(var(--orbit-mini) / -2);
   animation: orbit-spin 18s linear infinite reverse;
   filter: drop-shadow(0 1px 3px rgba(21, 21, 26, 0.22));
 }
@@ -287,7 +290,10 @@ body {
 .about-body {
   padding-top: 0.25rem;
   border-top: 1px solid var(--hairline);
-  margin-top: 0.5rem;
+  /* The astronaut hangs below the portrait when it swings through 6 o'clock,
+     so the divider starts below its reach instead of running through it.
+     Clipped by .about-inner while closed, so it costs nothing until opened. */
+  margin-top: calc(var(--orbit-reach) + 0.5rem);
 }
 
 .about-body p {
