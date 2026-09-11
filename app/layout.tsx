@@ -18,9 +18,18 @@ const sans = Space_Grotesk({
  * with no card. Set NEXT_PUBLIC_SITE_URL in production; VERCEL_URL covers
  * preview deploys on its own.
  */
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+function resolveSiteUrl(): string {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
+  // The stable production alias. Prefer it over VERCEL_URL, which is unique
+  // per deployment and would change every OG image link on each push.
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  }
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "http://localhost:3000";
+}
+
+const siteUrl = resolveSiteUrl();
 
 const TITLE = "The Dani Test";
 const DESCRIPTION =
