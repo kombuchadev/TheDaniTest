@@ -83,8 +83,13 @@ for (const [name, baseUrl, keyVar, modelVar] of PROVIDERS) {
   const json = await res.json().catch(() => ({}));
   const ids = (json.data ?? [])
     .map((m) => String(m.id).replace(/^models\//, ""))
-    // Drop the ones that cannot answer a chat completion.
-    .filter((id) => !/whisper|tts|embed|guard|image|video|audio|veo|rerank/i.test(id))
+    // Drop the ones that cannot answer a chat completion. Safety and
+    // moderation classifiers are the trap here: they accept a normal request
+    // and return no content at all.
+    .filter(
+      (id) =>
+        !/whisper|tts|embed|guard|image|video|audio|veo|rerank|safety|moderation|classif/i.test(id),
+    )
     .sort();
 
   if (ids.length === 0) {

@@ -75,8 +75,12 @@ export const CATALOGUE: Entry[] = [
     baseUrl: "https://openrouter.ai/api/v1",
     keyVar: "OPENROUTER_API_KEY",
     modelVar: "OPENROUTER_MODEL",
-    // Safe to default: this one auto-routes across whatever free models are
-    // currently up, so unlike a pinned name it cannot go stale.
+    // "Free Models Router": picks a free model at RANDOM per request. That
+    // makes it immune to the stale-name problem, but the roll is genuinely
+    // random and can land on a model that cannot hold a conversation (a test
+    // call here was served by a content-safety classifier that returned no
+    // content). Fine in this slot, second from last, where a bad answer just
+    // fails the output guard and moves on. Do not promote it up the chain.
     defaultModel: "openrouter/free",
     structured: "json_object",
   },
