@@ -1,21 +1,19 @@
 import type { ProviderConfig } from "./types";
 
 /**
- * The fallback chain, in order. Every one of these speaks the OpenAI
- * /chat/completions shape, so "add a provider" is a base URL, a key and a
- * model name. No new integration code, ever.
+ * Every provider here speaks the OpenAI /chat/completions shape, so adding
+ * one is a base URL, a key and a list of models. No new integration code.
  *
- * A provider is skipped unless it has BOTH a key and a model. Skipping is
- * silent and expected: run with one, run with all seven.
+ * WHY MANY MODELS PER PROVIDER: free tiers are rate limited per model, not
+ * per account. Listing two models on Groq is two daily allowances, and a model
+ * that is rate limited or retired does not take the whole provider down with it.
  *
- * Order matters. The chain stops at the first provider that answers and
- * passes the output guard, so put the biggest free allowance first and leave
- * the rest as insurance. To take one out of rotation, blank its key.
- *
- * `npm run models` prints what each configured provider actually serves
- * today. Use it before pinning a name: these get renamed and retired
- * constantly, and a stale name is a silent 404 that drops every request to
- * canned verdicts.
+ * A provider takes part only if its key is set. Its models come from the
+ * model env var (comma separated) when set, otherwise from the defaults below.
+ * Prefer the defaults: every one was picked by running candidates through
+ * `/api/dev/probe`, which uses the real request and the real output guard, and
+ * keeping only those that produced a verdict. A pinned env value replaces the
+ * list entirely, so a stale pin quietly undoes that.
  */
 
 type Entry = {
@@ -23,10 +21,13 @@ type Entry = {
   baseUrl: string;
   keyVar: string;
   modelVar: string;
-  /** Only used when the model var is unset. Omit where names churn. */
-  defaultModel?: string;
+  defaultModels: string[];
   structured: ProviderConfig["structured"];
+  extraBody?: (model: string) => Record<string, unknown> | undefined;
 };
+
+/** Reasoning models spend tokens thinking before they answer. */
+const MAX_TOKENS = 1200;
 
 export const CATALOGUE: Entry[] = [
   {
@@ -34,40 +35,28 @@ export const CATALOGUE: Entry[] = [
     baseUrl: "https://api.groq.com/openai/v1",
     keyVar: "GROQ_API_KEY",
     modelVar: "GROQ_MODEL",
-    defaultModel: "openai/gpt-oss-120b",
+    // Both answered in about a second in the probe.
+    // Left out on purpose:
+    //   openai/gpt-oss-20b    pasted our JSON schema into its answer
+    //   qwen/qwen3.6-27b      free output-token limit is below what we ask for
+    //   groq/compound(-mini)  an agent that runs its own web searches, which
+    //                         would send people's ideas to a search provider
+    defaultModels: ["openai/gpt-oss-120b", "qwen/qwen3.8-27b"],
     structured: "json_object",
+    // gpt-oss thinks by default. For a two-line roast that is wasted latency
+    // and wasted tokens against the daily allowance.
+    extraBody: (model) =>
+      model.startsWith("openai/gpt-oss") ? { reasoning_effort: "low" } : undefined,
   },
   {
     name: "gemini",
     baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
     keyVar: "GEMINI_API_KEY",
     modelVar: "GEMINI_MODEL",
-    defaultModel: "gemini-flash-latest",
-    structured: "json_object",
-  },
-  {
-    name: "cerebras",
-    baseUrl: "https://api.cerebras.ai/v1",
-    keyVar: "CEREBRAS_API_KEY",
-    modelVar: "CEREBRAS_MODEL",
-    defaultModel: "gpt-oss-120b",
-    structured: "json_schema",
-  },
-  // The four below have no default model on purpose. Their catalogues move
-  // faster than this file will, so an unset model var skips the provider
-  // instead of guessing a name that 404s.
-  {
-    name: "nvidia",
-    baseUrl: "https://integrate.api.nvidia.com/v1",
-    keyVar: "NVIDIA_API_KEY",
-    modelVar: "NVIDIA_MODEL",
-    structured: "json_object",
-  },
-  {
-    name: "github",
-    baseUrl: "https://models.github.ai/inference",
-    keyVar: "GITHUB_MODELS_TOKEN",
-    modelVar: "GITHUB_MODEL",
+    // "-latest" aliases track the current release, so a rename upstream does
+    // not quietly break us. Lite first: 1.2s against 3.8s in the probe, with
+    // its own separate allowance.
+    defaultModels: ["gemini-flash-lite-latest", "gemini-flash-latest"],
     structured: "json_object",
   },
   {
@@ -75,13 +64,27 @@ export const CATALOGUE: Entry[] = [
     baseUrl: "https://openrouter.ai/api/v1",
     keyVar: "OPENROUTER_API_KEY",
     modelVar: "OPENROUTER_MODEL",
-    // "Free Models Router": picks a free model at RANDOM per request. That
-    // makes it immune to the stale-name problem, but the roll is genuinely
-    // random and can land on a model that cannot hold a conversation (a test
-    // call here was served by a content-safety classifier that returned no
-    // content). Fine in this slot, second from last, where a bad answer just
-    // fails the output guard and moves on. Do not promote it up the chain.
-    defaultModel: "openrouter/free",
+    // Both work but take around 13s, so they matter only when Groq and Gemini
+    // are both failing. Not "openrouter/free": it picks a model at random and
+    // landed on a safety classifier that returns no verdict, both times tested.
+    defaultModels: ["nex-agi/nex-n2.5-pro:free", "nvidia/nemotron-3-super-120b-a12b:free"],
+    structured: "json_object",
+  },
+  // No defaults below: add a key, probe, and pin the models that pass.
+  {
+    name: "nvidia",
+    baseUrl: "https://integrate.api.nvidia.com/v1",
+    keyVar: "NVIDIA_API_KEY",
+    modelVar: "NVIDIA_MODEL",
+    defaultModels: [],
+    structured: "json_object",
+  },
+  {
+    name: "github",
+    baseUrl: "https://models.github.ai/inference",
+    keyVar: "GITHUB_MODELS_TOKEN",
+    modelVar: "GITHUB_MODEL",
+    defaultModels: [],
     structured: "json_object",
   },
   {
@@ -89,25 +92,64 @@ export const CATALOGUE: Entry[] = [
     baseUrl: "https://api.mistral.ai/v1",
     keyVar: "MISTRAL_API_KEY",
     modelVar: "MISTRAL_MODEL",
+    defaultModels: [],
     structured: "json_object",
   },
 ];
 
-export function providerChain(): ProviderConfig[] {
-  return CATALOGUE.flatMap((entry) => {
-    const apiKey = process.env[entry.keyVar] ?? "";
-    const model = process.env[entry.modelVar] ?? entry.defaultModel ?? "";
-    if (!apiKey || !model) return [];
+function keyFor(entry: Entry): string {
+  return process.env[entry.keyVar]?.trim() ?? "";
+}
 
-    return [
-      {
-        name: entry.name,
-        baseUrl: entry.baseUrl,
-        apiKey,
-        model,
-        structured: entry.structured,
-        maxTokens: 600,
-      },
-    ];
+function modelsFor(entry: Entry): string[] {
+  const pinned = process.env[entry.modelVar]?.trim();
+  const list = pinned ? pinned.split(",") : entry.defaultModels;
+  return [...new Set(list.map((m) => m.trim()).filter(Boolean))];
+}
+
+function configFor(entry: Entry, model: string, apiKey: string): ProviderConfig {
+  return {
+    id: `${entry.name}:${model}`,
+    name: entry.name,
+    baseUrl: entry.baseUrl,
+    apiKey,
+    model,
+    structured: entry.structured,
+    maxTokens: MAX_TOKENS,
+    extraBody: entry.extraBody?.(model),
+  };
+}
+
+/**
+ * Round robin across providers: every provider's first model, then every
+ * provider's second, and so on. When a whole provider is down, the next
+ * attempt is a different company rather than a sibling model on the same
+ * broken endpoint.
+ */
+export function providerChain(): ProviderConfig[] {
+  const perProvider = CATALOGUE.map((entry) => {
+    const apiKey = keyFor(entry);
+    return apiKey ? modelsFor(entry).map((model) => configFor(entry, model, apiKey)) : [];
   });
+
+  const chain: ProviderConfig[] = [];
+  const depth = Math.max(0, ...perProvider.map((list) => list.length));
+  for (let i = 0; i < depth; i++) {
+    for (const list of perProvider) {
+      const next = list[i];
+      if (next) chain.push(next);
+    }
+  }
+  return chain;
+}
+
+/** "provider:model" to a config, for the dev probe. Null if no key. */
+export function candidate(spec: string): ProviderConfig | null {
+  const split = spec.indexOf(":");
+  if (split === -1) return null;
+  const entry = CATALOGUE.find((e) => e.name === spec.slice(0, split));
+  const model = spec.slice(split + 1).trim();
+  if (!entry || !model) return null;
+  const apiKey = keyFor(entry);
+  return apiKey ? configFor(entry, model, apiKey) : null;
 }

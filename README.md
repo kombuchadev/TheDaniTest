@@ -11,24 +11,36 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for why it is built this way.
 
 ```bash
 npm install
-cp .env.example .env.local   # optional — it runs with no keys at all
+cp .env.example .env   # optional — it runs with no keys at all
 npm run dev
 ```
 
 With no API keys set, every request falls through to the canned-verdict tier, so the
-whole app is exercisable offline. Add a Cerebras key to get real verdicts.
+whole app is exercisable offline. Add a Groq or Gemini key to get real verdicts.
+
+## Models
+
+Each provider with a key contributes a list of free models, defined in
+`lib/providers/registry.ts`. Free limits are per model, so more models means more
+allowance. The judge alternates between providers, starts a backup request when one is
+slow, and benches models that just failed.
+
+- `npm run models` lists what each configured provider serves. Free, no tokens.
+- `/api/dev/probe` (dev server only) runs every model in the chain through the real
+  request and the real output guard, and reports which ones produced a verdict. Add
+  `?candidates=groq:some-model,openrouter:other-model:free` to try new ones.
+
+Leave the `*_MODEL` env vars blank unless you mean to replace a provider's list.
 
 ## Guardrails
 
-The point of this codebase is the guard layer, not the UI. Every one of these is
-tested and passing.
+The point of this codebase is the guard layer, not the UI.
 
 **Input** (`lib/guards/input.ts`)
 - NFKC normalisation + zero-width/bidi/control-character stripping, applied *before*
   pattern matching — so `i<ZWSP>gnore previous instructions` is caught, not smuggled.
 - 500-char cap, 4KB body cap, `application/json` required, POST only.
-- 16 injection patterns. A match is answered in character without spending an LLM
-  token.
+- Injection patterns. A match is answered in character without spending an LLM token.
 - Angle brackets removed outright, so input cannot escape the `<idea>` delimiter.
 
 **Model** (`lib/prompt.ts`)
@@ -40,14 +52,16 @@ tested and passing.
 
 **Output** (`lib/guards/output.ts`) — fails closed, in order:
 1. Canary match against raw text.
-2. Paraphrased-instruction leak markers.
-3. Balanced-brace JSON extraction (survives fences and preamble).
-4. `zod` `.strict()` schema — unexpected keys are a hard failure.
+2. Leak markers: phrases that only exist inside our own prompt.
+3. Every balanced JSON object in the reply is tried, newest first.
+4. Near-miss answers are normalised (clipped lengths, numeric-string scores, snake_case
+   keys), then validated with `zod`. Only the four known fields are carried forward.
 5. Scrub: markup stripped, URLs / emails / long digit runs redacted.
 6. Re-validate after scrubbing.
 7. Content blocklist.
 
-Anything that fails drops to the canned tier. **The app cannot return an error page.**
+Anything that fails moves on to the next model, and finally to the canned tier. **The
+app cannot return an error page.**
 
 **Derived, not trusted** — the rating band comes from the score server-side, so the
 model cannot invent a label. The score is clamped 0–100 regardless of what came back.
@@ -58,13 +72,15 @@ that puts words in Dani's mouth.
 
 **Data** — no database, no analytics, no logging of idea text. Guard rejections log the
 *reason* only, never the text. IPs are salted-SHA256 hashed for rate limiting and never
-stored raw. Upstream provider error bodies are never read, logged, or propagated.
+stored raw. Upstream provider error bodies are never read in production; the dev server
+logs a truncated copy so a failing provider can be diagnosed.
 
 ## Personality
 
 `lib/dani.ts` is the whole personality — pet peeves, catchphrases, rubric, score bands,
-canned lines. The system prompt is generated from it. Currently placeholders.
+canned lines. The system prompt is generated from it.
 
 ## Deploy
 
-Push to GitHub, import on Vercel, set env vars from `.env.example`. Free Hobby plan.
+Pushing to `main` deploys to Vercel. Set env vars from `.env.example` in the Vercel
+project, and redeploy after changing any: they are applied at build time.

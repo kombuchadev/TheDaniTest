@@ -7,8 +7,9 @@ import { encodeVerdict } from "@/lib/share";
 export const runtime = "nodejs";
 // Never cached, never prerendered — each verdict is fresh.
 export const dynamic = "force-dynamic";
-// Hobby caps at ~10s; the judge budget is 8s, this is the outer net.
-export const maxDuration = 30;
+// The judge gives up after 25s and serves a canned verdict; this is the
+// outer net above that. Hobby allows up to 300s on Fluid compute.
+export const maxDuration = 60;
 
 /** Hard cap on the request body, well above MAX_IDEA_CHARS with JSON overhead. */
 const MAX_BODY_BYTES = 4_000;
